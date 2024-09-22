@@ -9,9 +9,8 @@ function App() {
   const [message, setmessage] = useState('');
   const [publicKey, setpublickey] = useState(null);
   const [aliceKeyPair, setalicekeypair] = useState(null);
-
   const [receivepublickey, setreceivepublickey] = useState(null);
-  const [sharesecretkkey, setsharesecretkkey] = useState(null); // Use state for imported key
+  const [sharesecretkey, setsharesecretkey] = useState(null); // State for shared secret key
 
   const handlesend = (message) => {
     setmessages((prevMessages) => [...prevMessages, message]);
@@ -37,7 +36,7 @@ function App() {
       console.log(err);
     }
   };
-  console.log(aliceKeyPair)
+
   useEffect(() => {
     socketRef.current = io('http://localhost:3050');
 
@@ -70,7 +69,7 @@ function App() {
 
       socketRef.current.on('receive', handleMessage);
       socketRef.current.on('receivekey', async (key) => {
-        console.log(key)
+        console.log(key);
         const importedPublicKey = await window.crypto.subtle.importKey(
           'raw', // Import raw format since it's received as raw
           key, // Bob's public key received over the network
@@ -87,14 +86,20 @@ function App() {
             aliceKeyPair.privateKey,
             256 // Length of the shared secret in bits
           );
+          setsharesecretkey(aliceSharedSecret); // Store the derived shared secret
+
+          // Convert shared secret to hex for logging
+          const shareSecretHex = Array.from(new Uint8Array(aliceSharedSecret))
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join('');
+          console.log('Shared secret (hex):', shareSecretHex);
         }
 
-        setsharesecretkkey(aliceSharedSecret);
         console.log(importedPublicKey);
         const receiverKeyHex = Array.from(new Uint8Array(key))
           .map((b) => b.toString(16).padStart(2, '0'))
           .join('');
-        console.log('Received key:', receiverKeyHex);
+        console.log('Received key (hex):', receiverKeyHex);
         setreceivepublickey(receiverKeyHex); // Optionally store the received key in a state
       });
 
@@ -102,7 +107,7 @@ function App() {
         socketRef.current.off('message', handleMessage);
       };
     }
-  }, []);
+  }, [aliceKeyPair]);
 
   useEffect(() => {
     if (publicKey && socketRef.current) {
@@ -112,10 +117,9 @@ function App() {
       const publichexkey = Array.from(new Uint8Array(publicKey))
         .map((b) => b.toString(16).padStart(2, '0'))
         .join('');
-      console.log(publichexkey); // Log the public key in hex format
+      console.log('Public key (hex):', publichexkey); // Log the public key in hex format
     }
   }, [publicKey]);
-
 
   return (
     <>
