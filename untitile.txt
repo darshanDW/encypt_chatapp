@@ -11,37 +11,19 @@ function App() {
   const [aliceKeyPair, setalicekeypair] = useState(null);
   const [receivepublickey, setreceivepublickey] = useState(null);
   const [sharesecretkey, setsharesecretkey] = useState(null); // State for shared secret key
-  console.log("----", new Uint8Array(sharesecretkey).map((b) => b.toString(16).padStart(2, '0'))
-    .join(''))
+
   const handlesend = async (message) => {
     if (socketRef.current && sharesecretkey) {
       console.log(46666)
-      setmessages((prevMessages) => [...prevMessages, message])
       const en_msg = await encryptMessage(message)
       socketRef.current.emit('send', en_msg);
       const x = Array.from(en_msg)
         .map((b) => b.toString(16).padStart(2, '0'))
         .join('');
       console.log(x)
-
     }
+    setmessages((prevMessages) => [...prevMessages, message, x]);
 
-  };
-  const handleMessage = async (msg) => {
-
-    console.log('Message received:',);
-    const x = Array.from(new Uint8Array(msg))
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
-    console.log(x)
-    const uint8Array = new Uint8Array(msg);
-
-    const decodedString = new TextDecoder().decode(uint8Array);
-
-    const decryptedMessage = await decryptMessage(msg);
-    console.log(9999)
-    setmessages((prevMessages) => [...prevMessages, decryptedMessage]);
-    console.log(8888)
   };
 
   const generateECDHKeys = async () => {
@@ -51,12 +33,12 @@ function App() {
 
       const aliceKeyPair = await window.crypto.subtle.generateKey(
         algorithm,
-        true,
+        true, // Extractable keys
         ['deriveKey', 'deriveBits']
       );
       setalicekeypair(aliceKeyPair);
       const exportedKey = await window.crypto.subtle.exportKey('raw', aliceKeyPair.publicKey);
-      setpublickey(exportedKey);
+      setpublickey(exportedKey); // Store the exported public key
     } catch (err) {
       console.log(err);
     }
@@ -72,7 +54,7 @@ function App() {
       socketRef.current.on('both_clients_ready', () => {
         console.log('Both clients are ready, sharing key.');
         console.log(4);
-        generateECDHKeys();
+        generateECDHKeys(); // Generate keys when both clients are ready
       });
       console.log(2);
     });
@@ -86,74 +68,83 @@ function App() {
   }, []);
 
   useEffect(() => {
-
-
-    socketRef.current.on('receivekey', async (key) => {
-      console.log(key);
-      const importedPublicKey = await window.crypto.subtle.importKey(
-        'raw',
-        key,
-        { name: 'ECDH', namedCurve: 'P-256' },
-        true,
-        []
-      );
-      if (aliceKeyPair) {
-        const aliceSharedSecret = await crypto.subtle.deriveBits(
-          {
-            name: 'ECDH',
-            public: importedPublicKey,
-          },
-          aliceKeyPair.privateKey,
-          256
-        );
-        setsharesecretkey(aliceSharedSecret);
-
-        const shareSecretHex = Array.from(new Uint8Array(aliceSharedSecret))
+    if (socketRef.current & sharesecretkey) {
+      const handleMessage = async (msg) => {
+        console.log('Message received:', msg);
+        const x = Array.from(msg)
           .map((b) => b.toString(16).padStart(2, '0'))
           .join('');
-        console.log('Shared secret (hex):', shareSecretHex);
-      }
-
-      console.log(importedPublicKey);
-      const receiverKeyHex = Array.from(new Uint8Array(key))
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
-      console.log('Received key (hex):', receiverKeyHex);
-      setreceivepublickey(receiverKeyHex);
-    });
+        console.log(x)
 
 
-    return () => {
-      socketRef.current.off('message', handleMessage);
-    };
-  }
-    , [aliceKeyPair]);
-  useEffect(() => {
-    if (socketRef.current && sharesecretkey) {
+        const decryptedMessage = await decryptMessage(encryptedPayload);
 
-      socketRef.current.on('receive', (msg) => { handleMessage(msg) });
+        setmessages((prevMessages) => [...prevMessages, decryptedMessage, x]);
+      };
+
+      socketRef.current.on('receive', handleMessage);
+
+      socketRef.current.on('receivekey', async (key) => {
+        console.log(key);
+        const importedPublicKey = await window.crypto.subtle.importKey(
+          'raw', // Import raw format since it's received as raw
+          key, // Bob's public key received over the network
+          { name: 'ECDH', namedCurve: 'P-256' }, // ECDH with the same curve
+          true, // Extractable
+          [] // No key usage for public key
+        );
+        if (aliceKeyPair) {
+          const aliceSharedSecret = await crypto.subtle.deriveBits(
+            {
+              name: 'ECDH',
+              public: importedPublicKey,
+            },
+            aliceKeyPair.privateKey,
+            256 // Length of the shared secret in bits
+          );
+          setsharesecretkey(aliceSharedSecret); // Store the derived shared secret
+
+          // Convert shared secret to hex for logging
+          const shareSecretHex = Array.from(new Uint8Array(aliceSharedSecret))
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join('');
+          console.log('Shared secret (hex):', shareSecretHex);
+        }
+
+        console.log(importedPublicKey);
+        const receiverKeyHex = Array.from(new Uint8Array(key))
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join('');
+        console.log('Received key (hex):', receiverKeyHex);
+        setreceivepublickey(receiverKeyHex); // Optionally store the received key in a state
+      });
+
+      return () => {
+        socketRef.current.off('message', handleMessage);
+      };
     }
+  }, [aliceKeyPair]);
 
-  }, [sharesecretkey])
   useEffect(() => {
     if (publicKey && socketRef.current) {
-      socketRef.current.emit('sharekey', publicKey);
+      socketRef.current.emit('sharekey', publicKey); // Emit the public key
       console.log('Public key shared:', publicKey);
 
       const publichexkey = Array.from(new Uint8Array(publicKey))
         .map((b) => b.toString(16).padStart(2, '0'))
         .join('');
-      console.log('Public key (hex):', publichexkey);
+      console.log('Public key (hex):', publichexkey); // Log the public key in hex format
     }
   }, [publicKey]);
 
 
   async function encryptMessage(message) {
+    // Generate a random initialization vector (IV)
     const IV = window.crypto.getRandomValues(new Uint8Array(12)); // 12 bytes for GCM
 
+    // Encode message to Uint8Array
     const encodedMessage = new TextEncoder().encode(message);
-    console.log("main key", new Uint8Array(sharesecretkey).map((b) => b.toString(16).padStart(2, '0'))
-      .join(''));
+    // Encrypt the message using AES-256-GCM
     const cipher = await window.crypto.subtle.encrypt(
       {
         name: 'AES-GCM',
@@ -163,6 +154,7 @@ function App() {
       encodedMessage
     );
 
+    // Get the encrypted message and the auth tag
     const encryptedMessage = new Uint8Array(cipher);
     const payload = new Uint8Array(IV.length + encryptedMessage.length);
     payload.set(IV);
@@ -174,8 +166,7 @@ function App() {
   async function decryptMessage(payload) {
     const IV = payload.slice(0, 12); // Extract IV
     const encryptedMessage = payload.slice(12); // Extract encrypted message
-    console.log("main key:", new Uint8Array(sharesecretkey).map((b) => b.toString(16).padStart(2, '0'))
-      .join(''))
+
     const aesKey = await window.crypto.subtle.importKey(
       'raw',
       new Uint8Array(sharesecretkey), // ECDH-derived key
@@ -206,7 +197,7 @@ function App() {
         ))}
       </ul>
       <input type='text' value={message} onChange={(e) => setmessage(e.target.value)} />
-      <button onClick={(sharesecretkey) => { if (sharesecretkey) { handlesend(message) } }}>Send</button>
+      <button onClick={() => handlesend(message)}>Send</button>
     </>
   );
 }
