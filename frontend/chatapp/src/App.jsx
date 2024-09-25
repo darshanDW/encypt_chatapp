@@ -16,13 +16,13 @@ function App() {
   const handlesend = async (message) => {
     if (socketRef.current && sharesecretkey) {
       console.log(46666)
-      setmessages((prevMessages) => [...prevMessages, message])
       const en_msg = await encryptMessage(message)
       socketRef.current.emit('send', en_msg);
       const x = Array.from(en_msg)
         .map((b) => b.toString(16).padStart(2, '0'))
         .join('');
       console.log(x)
+      setmessages((prevMessages) => [...prevMessages, `send message   ${message}       :      encrypted message ${x}`]); // Joining them side by side
 
     }
 
@@ -40,7 +40,7 @@ function App() {
 
     const decryptedMessage = await decryptMessage(msg);
     console.log(9999)
-    setmessages((prevMessages) => [...prevMessages, decryptedMessage]);
+    setmessages((prevMessages) => [...prevMessages, `decrypted message${decryptedMessage}:  receive message ${x}`]); // Joining them side by side
     console.log(8888)
   };
 
