@@ -29,7 +29,7 @@ Step 1: Set up the Frontend
    ```bash
     cd frontend
 4. Install dependencies:
-    ```bash
+```bash
     npm install
 5. Start the development server:
    ```bash     
