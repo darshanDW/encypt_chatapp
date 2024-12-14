@@ -68,7 +68,7 @@ function App() {
   };
 
   useEffect(() => {
-    socketRef.current = io('http://localhost:3000');
+    socketRef.current = io('https://encypt-chatapp.onrender.com');
 
     socketRef.current.on('connect', () => {
       console.log('Connected:', socketRef.current.id);
@@ -208,16 +208,16 @@ function App() {
       <div className="flex flex-col justify-center items-center min-h-screen space-y-6">
         <h1 className="text-xl font-bold">WeChat</h1>
         {!sharesecretkey && (<>
-  <button className="bg-black text-white px-4 py-2 rounded hover:bg-gray-700">
-    <a href="/" target="_blank" rel="noopener noreferrer">
-      Connect as other client
-    </a>
-  </button>
-   <p className="w-3/5 text-center">
-   Note: become receiver by click above button and send a message, you will see both encrypted and decrypted messages on the sender and receiver sides, respectively.
- </p>
- </>
-)}      
+          <button className="bg-black text-white px-4 py-2 rounded hover:bg-gray-700">
+            <a href="/" target="_blank" rel="noopener noreferrer">
+              Connect as other client
+            </a>
+          </button>
+          <p className="w-3/5 text-center">
+            Note: become receiver by click above button and send a message, you will see both encrypted and decrypted messages on the sender and receiver sides, respectively.
+          </p>
+        </>
+        )}
 
         <div className="w-full max-w-md">
           <div className="rounded-md border border-black p-4">
