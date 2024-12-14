@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
- import io from 'socket.io-client';
+import io from 'socket.io-client';
 
 function App() {
   const socketRef = useRef(null);
@@ -22,12 +22,13 @@ function App() {
         .join('');
       console.log(x)
       setmessages((prevMessages) => [
-        ...prevMessages, 
-        `Send message: ${message}`, 
+
+        `Send message: ${message}`,
+        ...prevMessages,
         `Encrypted message: ${x}`
       ]);
-      
- 
+
+
     }
 
   };
@@ -44,7 +45,7 @@ function App() {
 
     const decryptedMessage = await decryptMessage(msg);
     console.log(9999)
-    setmessages((prevMessages) => [...prevMessages, `decrypted message :${decryptedMessage} `,` receive message :${x}`]); // Joining them side by side
+    setmessages((prevMessages) => [`decrypted message :${decryptedMessage} `, ` receive message :${x}`, ...prevMessages,]); // Joining them side by side
     console.log(8888)
   };
 
@@ -67,7 +68,7 @@ function App() {
   };
 
   useEffect(() => {
-    socketRef.current = io('http://localhost:3050');
+    socketRef.current = io('http://localhost:3000');
 
     socketRef.current.on('connect', () => {
       console.log('Connected:', socketRef.current.id);
@@ -204,48 +205,58 @@ function App() {
 
   return (
     <>
-  <div className="flex flex-col justify-center items-center min-h-screen space-y-6">
-  <h1 className="text-xl font-bold">WeChat</h1>
-  <p className="w-3/5 text-center">
-    Note: Open two pages and send a message, you will see both encrypted and decrypted messages on the sender and receiver sides, respectively.
-  </p>
-  
-  <div className="w-full max-w-md">
-    <div className="rounded-md border border-black p-4">
-      <input
-        className="border border-gray-300 p-2 w-full mb-4"
-        type="text"
-        value={message}
-        placeholder="ENTER THE MESSAGE"
-        onChange={(e) => setmessage(e.target.value)}
-      />
-  
-      <button
-        className="bg-black text-white px-4 py-2 rounded hover:bg-gray-700 w-full"
-        onClick={(sharesecretkey) => {
-          if (sharesecretkey) {
-            handlesend(message);
-          }
-        }}
-      >
-        Send
-      </button>
-    </div>
-  
-    <div className="border border-gray-500 rounded-md bg-green-100 p-4 mt-4 overflow-scroll">
-      <ul className="space-y-2">
-        {messages.map((message, index) => (
-          <li key={index} className="border-b border-gray-200 pb-2">
-            {message}
-          </li>
-        ))}
-      </ul>
-    </div>
-  </div>
-</div>
+      <div className="flex flex-col justify-center items-center min-h-screen space-y-6">
+        <h1 className="text-xl font-bold">WeChat</h1>
+        {!sharesecretkey && (<>
+  <button className="bg-black text-white px-4 py-2 rounded hover:bg-gray-700">
+    <a href="/" target="_blank" rel="noopener noreferrer">
+      Connect as other client
+    </a>
+  </button>
+   <p className="w-3/5 text-center">
+   Note: become receiver by click above button and send a message, you will see both encrypted and decrypted messages on the sender and receiver sides, respectively.
+ </p>
+ </>
+)}      
 
-  </>
-  
+        <div className="w-full max-w-md">
+          <div className="rounded-md border border-black p-4">
+            <input
+              className="border border-gray-300 p-2 w-full mb-4"
+              type="text"
+              value={message}
+              placeholder="ENTER THE MESSAGE"
+              onChange={(e) => setmessage(e.target.value)}
+            />
+
+            <button
+              className="bg-black text-white px-4 py-2 rounded hover:bg-gray-700 w-full"
+              onClick={(sharesecretkey) => {
+                if (sharesecretkey) {
+                  handlesend(message);
+                  setmessage(""); // Clear the input field
+
+                }
+              }}
+            >
+              Send
+            </button>
+          </div>
+
+          <div className="border border-gray-500 rounded-md bg-green-100 p-4 mt-4 overflow-scroll">
+            <ul className="space-y-2">
+              {messages.map((message, index) => (
+                <li key={index} className="border-b border-gray-200 pb-2">
+                  {message}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </>
+
   );
 }
 

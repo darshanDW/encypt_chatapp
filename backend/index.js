@@ -1,20 +1,20 @@
 const express = require('express');
 const app = express();
 const server = require('http').createServer(app);
+const cors = require('cors');
+const port = process.env.PORT || 3000;
 const io = require('socket.io')(server, {
     cors: {
         origin: "*",
         methods: ["GET", "POST"]
     }
 });
-const cors = require('cors');
-
 app.get('/', (req, res) => {
     res.send('Successful response.');
 });
 
-server.listen(3050, () => {
-    console.log("Server running on port 3050");
+server.listen(port, () => {
+    console.log(`Server running on ${port}`);
 });
 const clientsInRoom = new Set();
 
