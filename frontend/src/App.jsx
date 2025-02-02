@@ -24,8 +24,9 @@ function App() {
       setmessages((prevMessages) => [
 
         `Send message: ${message}`,
+           `Encrypted message: ${x}`,
         ...prevMessages,
-        `Encrypted message: ${x}`
+     
       ]);
 
 
