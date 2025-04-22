@@ -14,40 +14,26 @@ function App() {
     .join(''))
   const handlesend = async (message) => {
     if (socketRef.current && sharesecretkey) {
-      console.log(46666)
-      const en_msg = await encryptMessage(message)
+      const en_msg = await encryptMessage(message);
       socketRef.current.emit('send', en_msg);
-      const x = Array.from(en_msg)
+      const encryptedHex = Array.from(en_msg)
         .map((b) => b.toString(16).padStart(2, '0'))
         .join('');
-      console.log(x)
       setmessages((prevMessages) => [
-
-        `Send message: ${message}`,
-           `Encrypted message: ${x}`,
+        `Sent: ${message}\nEncrypted: ${encryptedHex}`,
         ...prevMessages,
-     
       ]);
-
-
     }
-
   };
   const handleMessage = async (msg) => {
-
-    console.log('Message received:',);
-    const x = Array.from(new Uint8Array(msg))
+    const encryptedHex = Array.from(new Uint8Array(msg))
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('');
-    console.log(x)
-    const uint8Array = new Uint8Array(msg);
-
-    const decodedString = new TextDecoder().decode(uint8Array);
-
     const decryptedMessage = await decryptMessage(msg);
-    console.log(9999)
-    setmessages((prevMessages) => [`decrypted message :${decryptedMessage} `, ` receive message :${x}`, ...prevMessages,]); // Joining them side by side
-    console.log(8888)
+    setmessages((prevMessages) => [
+      `Received (Encrypted): ${encryptedHex}\nDecrypted: ${decryptedMessage}`,
+      ...prevMessages,
+    ]);
   };
 
   const generateECDHKeys = async () => {
@@ -205,60 +191,72 @@ function App() {
 
 
   return (
-    <>
-      <div className="flex flex-col justify-center items-center min-h-screen space-y-6">
-        <h1 className="text-xl font-bold">WeChat</h1>
-        {!sharesecretkey && (<>
-          <button className="bg-black text-white px-4 py-2 rounded hover:bg-gray-700">
-            <a href="/" target="_blank" rel="noopener noreferrer">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+      <div className="bg-white w-full max-w-xl rounded-xl shadow-lg flex flex-col h-[90vh]">
+        <div className="bg-blue-600 text-white text-center py-4 rounded-t-xl text-2xl font-semibold">
+          WeChat Secure Chat 💬
+        </div>
+  
+        {!sharesecretkey && (
+          <div className="px-4 py-2 text-center text-sm bg-yellow-100 text-yellow-800">
+            <p>
+              Become the second client to see both encrypted and decrypted messages.
+            </p>
+            <a
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-2 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition"
+            >
               Connect as other client
             </a>
-          </button>
-          <p className="w-3/5 text-center">
-            Note: become receiver by click above button and send a message, you will see both encrypted and decrypted messages on the sender and receiver sides, respectively.
-          </p>
-        </>
+          </div>
         )}
-
-        <div className="w-full max-w-md">
-          <div className="rounded-md border border-black p-4">
-            <input
-              className="border border-gray-300 p-2 w-full mb-4"
-              type="text"
-              value={message}
-              placeholder="ENTER THE MESSAGE"
-              onChange={(e) => setmessage(e.target.value)}
-            />
-
-            <button
-              className="bg-black text-white px-4 py-2 rounded hover:bg-gray-700 w-full"
-              onClick={(sharesecretkey) => {
-                if (sharesecretkey) {
-                  handlesend(message);
-                  setmessage(""); // Clear the input field
-
-                }
-              }}
+  
+        {/* Chat messages */}
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-gray-50">
+          {messages.map((msg, index) => (
+            <div
+              key={index}
+              className={`max-w-[80%] px-4 py-2 rounded-lg shadow-sm break-words ${
+                msg.startsWith("Received") // Check if it's a received message
+                  ? "bg-green-200 self-start" // Green background for received messages
+                  : "bg-blue-200 self-end ml-auto" // Blue background for sent messages
+              }`}
             >
-              Send
-            </button>
-          </div>
-
-          <div className="border border-gray-500 rounded-md bg-green-100 p-4 mt-4 overflow-scroll">
-            <ul className="space-y-2">
-              {messages.map((message, index) => (
-                <li key={index} className="border-b border-gray-200 pb-2">
-                  {message}
-                </li>
-              ))}
-            </ul>
-          </div>
+              <span className="text-sm text-gray-800 whitespace-pre-wrap">{msg}</span>
+            </div>
+          ))}
+        </div>
+  
+        {/* Input field */}
+        <div className="p-4 border-t flex items-center gap-2">
+          <input
+            className="flex-1 p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            type="text"
+            value={message}
+            placeholder="Type a message..."
+            onChange={(e) => setmessage(e.target.value)}
+          />
+          <button
+            className={`bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition ${
+              !sharesecretkey ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            onClick={() => {
+              if (sharesecretkey) {
+                handlesend(message);
+                setmessage('');
+              }
+            }}
+            disabled={!sharesecretkey}
+          >
+            Send
+          </button>
         </div>
       </div>
-
-    </>
-
+    </div>
   );
+  
 }
 
 export default App;
